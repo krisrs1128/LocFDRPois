@@ -147,7 +147,7 @@ LocfdrFuns <- function(data, df, knots) {
 #'
 #' @importFrom ggplot2 ggplot geom_bar aes geom_line scale_y_sqrt scale_fill_gradient2
 #' @export
-SummarizeLocfdr <- function(x, df, knots) {
+SummarizeLocfdr <- function(x, df = 5, knots = c()) {
     # Run locfdr
     sim_funs <- LocfdrFuns(x, df, knots)
 
@@ -162,9 +162,9 @@ SummarizeLocfdr <- function(x, df, knots) {
     # Combine and plot
     locfdr_res <- data.frame(BuildTable(x), f0=N * f0, f=N * f, fdr=fdr)
     locfdr_fig <- ggplot2::ggplot(locfdr_res) +
-        ggplot2::geom_bar(ggplot2::aes(x=data, y=Freq, fill=fdr), stat="identity") +
-        ggplot2::geom_line(ggplot2::aes(x=data, y=f0), col="midnightblue") +
-        ggplot2::geom_line(ggplot2::aes(x=data, y=f), col="plum3") +
+        ggplot2::geom_bar(ggplot2::aes_string(x="data", y="Freq", fill="fdr"), stat="identity") +
+        ggplot2::geom_line(ggplot2::aes_string(x="data", y="f0"), col="midnightblue") +
+        ggplot2::geom_line(ggplot2::aes_string(x="data", y="f"), col="plum3") +
         ggplot2::scale_y_sqrt() +
         ggplot2::scale_fill_gradient2(high="steelblue", low="indianred", midpoint=0.2)
     return(list(pi0=sim_funs$pi0, lambda0=sim_funs$lambda0, locfdr_res=locfdr_res,

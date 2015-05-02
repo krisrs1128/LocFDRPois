@@ -4,7 +4,7 @@
 \alias{SummarizeLocfdr}
 \title{Call and summarize output to LocfdrFuns}
 \usage{
-SummarizeLocfdr(x, df, knots)
+SummarizeLocfdr(x, df = 5, knots = c())
 }
 \arguments{
 \item{x}{The raw data (before histogramming) to estimate a mixture density for.}
