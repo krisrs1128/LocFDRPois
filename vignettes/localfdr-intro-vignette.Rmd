@@ -1,0 +1,138 @@
+---
+title: "Introduction to the LocalFDRPois package"
+author: "Kris Sankaran"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to the LocalFDRPois package}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+
+In this document, we (1) introduce an extension to the Local False Discovery
+Rate (Local FDR) methodology and (2) explain how it is a natural approach to
+mutation data.
+
+\section*{Local FDR}
+
+\subsection*{Approach}
+
+This method was designed in the context of count data, where there are 
+two regimes of interest -- the prevailing one with small counts, and a rarer
+one with much higher valued counts. Our specific motivation comes from the
+detection of APOBEC mutations, which are important in understanding the 
+evolution fo HIV. To determine the number of mutations to use as a cutoff for
+declaring a mutation an APOBEC mutation, we adopt a method originally developed
+in the multiple testing community, called the Local False Discovery
+Rate \cite{efron2002empirical}. This method is designed for the
+situation where, from a large collection of mostly uninteresting
+measurements, we need to identify a few that ``stand out'' and are
+worthy of followup study. For example, most genes will have relatively
+few mutations, but a few that have an unusually large number are
+reasonable candidates for being APOBEC mutations.
+
+Formally, we assume the data is drawn from a mixture of two
+distributions, $f_{0}$ and $f_{1}$, the null and alternative,
+respectively. The null is more common than the alternative, which is
+modeled by assuming that the mixture proportion $\pi_{0}$ for the null
+component is close to 1. So, the observed data density is
+
+\begin{align}
+f\left(x\right) = \pi_{0}f_{0}\left(x\right) + \left(1 -
+  \pi_{0}\right) f_{1}\left(x\right),
+\end{align}
+and the probability that a point comes from the null component
+given an observed value of $x$ is, by Bayes rule,
+\begin{align}
+fdr\left(x\right) = \Parg{\text{null} \mid X = x} &= \frac{\Parg{X=x \mid
+    \text{null}}\Parg{\text{null}}}{\Parg{X = x}} \\
+&= \frac{f_{0}\left(x\right)\pi_{0}}{f\left(x\right)}. \label{eq:bayes_null}
+\end{align}
+
+The main idea of he Local FDR algorithm is to estimate both $\pi_{0}$
+and the ratio $\frac{f_{0}\left(x\right)}{f\left(x\right)}$. In the
+case that there are many null observations, this can be done reliably,
+through maximum likelihood or generalized linear models, see for
+example \cite{efron2007size, efron2002empirical}. An implementation
+of this method for the case used by this paper is provided in our R
+library, \texttt{LocFDRPois}.
+
+\section*{APOBEC Application}
+
+\subsection*{Setup}
+
+The Local FDR method is most commonly used to identify genes with
+large effects in gene expression experiments, but there is an analogy
+with the identification of APOBEC mutations.
+
+In the gene expression application, most genes do not display any
+differential expression between treatment and control groups, while a
+small subset may exhibit some treatment effect. To measure treatment
+effects, it is common to use $z$-statistics, which will be standard
+normal in the null genes (this is $f_{0}$), and are assumed normal
+with unknown, nonzero means in those of interest (this is
+$f_{1}$). The proportion of genes that are null is $\pi_{0}$.
+
+In our APOBEC mutation scenario, most genes are assumed to have a
+mutation count drawn from a Poisson distribution with low mean
+($f_{0}$), while those resulting from APOBEC are drawn from a Poisson
+with larger mean ($f_{1}$). The small probability and many
+opportunities for mutation together make this approximation by a
+mixture of Poisson distributions reasonable. One slight difference
+between gene expression setup is that earlier we assumed that the null
+density was from a known density (a standard normal), while in the
+current scenario we only have an approximate idea of the null density
+(a Poisson with small mean). Fortunately, a variation of the Local FDR
+method enables estimation of an empirical null, see Section 6 of
+\cite{efron2002empirical}.
+
+\subsection*{Implementation and Interpretation}
+
+In this section, we provide the code for performing the Local FDR
+estimation described in the previous sections, using simulated data.
+
+First, we load the required libraries.
+
+```{r}
+library("LocFDRPois")
+n0 <- 900
+n1 <- 100
+lambda0 <- 1
+lambda1 <- 10
+sim_data <- c(rpois(n0, lambda0), rpois(n1, lambda1))
+```
+
+To perform Local FDR estimation, the key function is
+\texttt{SummarizeLocFDR()} in package \texttt{LocFDRPois}. It returns
+\begin{itemize}
+  \item \texttt{pi0}: The proportion of samples estimated from the
+    the null component.
+  \item \texttt{lambda0}: The estimated Poisson rate for the null 
+    component samples.
+  \item \texttt{locfdr\_res}: A table whose columns are
+    \begin{itemize}
+      \item data: A list of counts.
+      \item Freq: The observed number of samples with this value for counts.
+      \item $f_{0}$: The number of samples that would be expected to
+        have this number of counts, if every gene was estimated
+        from the estimated null regime.
+      \item $f$: The number of samples that would be expected to
+        have this number of counts, under the estimated mixture
+        density.
+      \item $fdr$: The probability that a sample with this many
+        counts arose from the null component. These are the
+        probabilities used to guide the choice of null / nonnull cutoff.
+      \end{itemize}
+    \item \texttt{locfdr\_fig}: A \texttt{ggplot} object representing
+    the \texttt{locfdr\_res} table. The observed counts are plaed in a
+    histogram, and the estimated number of counts  under $f_{1}$ and
+    $f$ are overlaid pink and blue curves, respectively. The shade of
+    the histogram bars represents the probability $fdr\left(x\right)$,
+    with blue meaning more likely to be null and red meaning
+    more likely to be alternative.
+\end{itemize}
+
+```{r}
+SummarizeLocfdr(sim_data)
+```
