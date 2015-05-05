@@ -1,6 +1,6 @@
 Package: LocFDRPois
-Title: Functions for performing locfdr estimation when null and alternative are Poisson
-Version: 0.0.0
+Title: Functions for Performing Local FDR Estimation when Null and Alternative are Poisson
+Version: 1.0.0
 Authors@R: person("Kris", "Sankaran", , "kriss1@stanford.edu", role = c("aut", "cre"))
 Description: The main idea of he Local FDR algorithm is to estimate both proportion of null observations and the ratio of null and alternative densities. In the case that there are many null observations, this can be done reliably, through maximum likelihood or generalized linear models. This package implements this in the case that the null and alternative densities are Poisson.
 Depends: R (>= 3.1.2)
